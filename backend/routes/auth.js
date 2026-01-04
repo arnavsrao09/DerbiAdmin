@@ -10,10 +10,10 @@ const initializeAdmin = async () => {
   if (adminCount === 0) {
     const defaultAdmin = new Admin({
       username: 'admin',
-      password: 'admin123' // Change this in production!
+      password: 'derbiadmin@2026' // Change this in production!
     });
     await defaultAdmin.save();
-    console.log('Default admin user created: admin/admin123');
+    console.log('Default admin user created');
   }
 };
 
