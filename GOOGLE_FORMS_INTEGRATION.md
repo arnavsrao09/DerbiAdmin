@@ -37,32 +37,67 @@ function onFormSubmit(e) {
     
     itemResponses.forEach(itemResponse => {
       const question = itemResponse.getItem().getTitle();
+      const itemType = itemResponse.getItem().getType();
       const answer = itemResponse.getResponse();
       
-      // Store all form data
-      formData[question] = answer;
-      
-      // Check if this is the sector field (adjust field name as needed)
-      if (question.toLowerCase().includes('sector')) {
-        sector = answer;
-      }
-      
-      // Check for file uploads (Google Forms stores file IDs)
-      if (Array.isArray(answer) && answer.length > 0) {
-        // If answer is an array, it might be file uploads
-        answer.forEach((fileId, index) => {
-          try {
-            const file = DriveApp.getFileById(fileId);
-            uploadedFiles.push({
-              fieldName: question,
-              fileName: file.getName(),
-              fileUrl: file.getUrl(),
-              filePath: file.getId()
-            });
-          } catch (err) {
-            console.log('Error processing file:', err);
-          }
-        });
+      // Check if this is a file upload question
+      if (itemType === FormApp.ItemType.FILE_UPLOAD) {
+        // File upload responses are arrays of file IDs
+        if (Array.isArray(answer) && answer.length > 0) {
+          answer.forEach((fileId) => {
+            try {
+              const file = DriveApp.getFileById(fileId);
+              
+              // Get the shareable link (view link)
+              // First, make sure the file is accessible
+              let fileUrl = file.getUrl();
+              
+              // Try to get a direct download link
+              // For files in Google Drive, we can create a shareable link
+              // The file.getUrl() gives us the Drive edit link
+              // We need to convert it to a view/download link
+              const fileIdFromUrl = file.getId();
+              const viewUrl = 'https://drive.google.com/file/d/' + fileIdFromUrl + '/view';
+              const downloadUrl = 'https://drive.google.com/uc?export=download&id=' + fileIdFromUrl;
+              
+              uploadedFiles.push({
+                fieldName: question,
+                fileName: file.getName(),
+                fileUrl: viewUrl, // View link
+                downloadUrl: downloadUrl, // Direct download link
+                fileId: fileIdFromUrl,
+                fileSize: file.getSize(),
+                mimeType: file.getBlob().getContentType()
+              });
+              
+              Logger.log('File processed: ' + file.getName() + ' - ' + viewUrl);
+            } catch (err) {
+              Logger.log('Error processing file with ID ' + fileId + ': ' + err.toString());
+              // Still add the file ID even if we can't access it
+              uploadedFiles.push({
+                fieldName: question,
+                fileName: 'File ID: ' + fileId,
+                fileUrl: 'https://drive.google.com/file/d/' + fileId + '/view',
+                downloadUrl: 'https://drive.google.com/uc?export=download&id=' + fileId,
+                fileId: fileId,
+                error: 'Could not access file: ' + err.toString()
+              });
+            }
+          });
+        }
+        // Store file IDs in formData as well
+        formData[question] = answer;
+      } else {
+        // Regular form field
+        formData[question] = answer;
+        
+        // Check if this is the sector field
+        // Update this to match your exact field name
+        if (question.toLowerCase().includes('industry segment') || 
+            question.toLowerCase().includes('sector') ||
+            question.toLowerCase().includes('vertical')) {
+          sector = answer || 'Other';
+        }
       }
     });
     
@@ -78,20 +113,38 @@ function onFormSubmit(e) {
     const options = {
       method: 'post',
       contentType: 'application/json',
-      payload: JSON.stringify(payload)
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
     };
     
     const response = UrlFetchApp.fetch(API_URL, options);
-    Logger.log('Response sent:', response.getResponseCode());
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    Logger.log('Response sent. Status: ' + responseCode);
+    Logger.log('Response body: ' + responseText);
+    
+    if (responseCode !== 200 && responseCode !== 201) {
+      throw new Error('Backend returned error: ' + responseCode + ' - ' + responseText);
+    }
     
   } catch (error) {
-    Logger.log('Error:', error);
-    // You can also send error notifications via email
-    MailApp.sendEmail({
-      to: 'your-email@example.com',
-      subject: 'Form Submission Error',
-      body: 'Error sending form response: ' + error.toString()
-    });
+    Logger.log('Error in onFormSubmit: ' + error.toString());
+    Logger.log('Stack trace: ' + error.stack);
+    
+    // Optional: Send error notification via email
+    // Uncomment and update email address if you want error notifications
+    /*
+    try {
+      MailApp.sendEmail({
+        to: 'your-email@example.com',
+        subject: 'Form Submission Error - Derbi Admin',
+        body: 'Error sending form response to backend:\n\n' + error.toString() + '\n\nStack trace:\n' + error.stack
+      });
+    } catch (emailError) {
+      Logger.log('Failed to send error email: ' + emailError.toString());
+    }
+    */
   }
 }
 

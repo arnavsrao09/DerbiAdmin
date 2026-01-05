@@ -21,8 +21,13 @@ const formResponseSchema = new mongoose.Schema({
     type: [{
       fieldName: String,
       fileName: String,
-      fileUrl: String,
-      filePath: String
+      fileUrl: String,        // Google Drive view link
+      downloadUrl: String,    // Direct download link
+      fileId: String,         // Google Drive file ID
+      filePath: String,       // Legacy field (kept for compatibility)
+      fileSize: Number,       // File size in bytes
+      mimeType: String,      // File MIME type
+      error: String           // Error message if file couldn't be accessed
     }],
     default: []
   }

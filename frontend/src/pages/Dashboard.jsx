@@ -7,7 +7,31 @@ import '../styles/Dashboard.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
+// Generate a color palette that can handle many sectors
+const generateColors = (count) => {
+  const baseColors = [
+    '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', 
+    '#FFC658', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+    '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#E74C3C', '#3498DB',
+    '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#34495E',
+    '#16A085', '#27AE60', '#2980B9', '#8E44AD', '#C0392B', '#D35400',
+    '#7F8C8D', '#95A5A6', '#BDC3C7', '#ECF0F1', '#34495E', '#2C3E50',
+    '#E74C3C', '#C0392B', '#A93226', '#922B21', '#7B241C', '#641E16'
+  ];
+  
+  // If we need more colors, generate variations
+  if (count <= baseColors.length) {
+    return baseColors.slice(0, count);
+  }
+  
+  // Generate additional colors by varying hue
+  const colors = [...baseColors];
+  for (let i = baseColors.length; i < count; i++) {
+    const hue = (i * 137.508) % 360; // Golden angle approximation
+    colors.push(`hsl(${hue}, 70%, 50%)`);
+  }
+  return colors;
+};
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -139,7 +163,8 @@ const Dashboard = () => {
     return (
       <tr key={response._id}>
         {headers.map((header, idx) => {
-          let cellContent = '';
+          let cellContent;
+          let isFileLink = false;
           
           if (idx === 0) {
             cellContent = rowNum;
@@ -150,16 +175,35 @@ const Dashboard = () => {
           } else if (header.startsWith('File')) {
             const fileIndex = parseInt(header.match(/\d+/)?.[0]) - 1;
             const file = response.uploadedFiles?.[fileIndex];
-            cellContent = file ? (file.fileName || file.fileUrl || 'N/A') : 'N/A';
+            if (file && file.fileUrl) {
+              isFileLink = true;
+              cellContent = file;
+            } else {
+              cellContent = file ? (file.fileName || 'N/A') : 'N/A';
+            }
           } else {
             cellContent = response.formData?.[header] || 'N/A';
           }
 
+          const cellText = typeof cellContent === 'object' && cellContent?.fileName 
+            ? cellContent.fileName 
+            : String(cellContent);
+
           return (
-            <td key={idx} title={String(cellContent)}>
-              {String(cellContent).length > 50 
-                ? String(cellContent).substring(0, 50) + '...' 
-                : cellContent}
+            <td key={idx} title={cellText}>
+              {isFileLink && cellContent?.fileUrl ? (
+                <a 
+                  href={cellContent.fileUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="file-link"
+                  title={cellContent.fileName || 'Open file'}
+                >
+                  {cellContent.fileName || 'View File'}
+                </a>
+              ) : (
+                cellText.length > 50 ? cellText.substring(0, 50) + '...' : cellText
+              )}
             </td>
           );
         })}
@@ -199,28 +243,64 @@ const Dashboard = () => {
           <h2>Applications Status Overview</h2>
           <div className="chart-container">
             {sectorDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={sectorDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ sector, count, percent }) => 
-                      `${sector}: ${count} (${(percent * 100).toFixed(1)}%)`
-                    }
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="count"
-                  >
-                    {sectorDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="chart-wrapper">
+                <ResponsiveContainer width="100%" height={500}>
+                  <PieChart>
+                    <Pie
+                      data={sectorDistribution}
+                      cx="50%"
+                      cy="45%"
+                      labelLine={false}
+                      label={false}
+                      outerRadius={140}
+                      innerRadius={40}
+                      fill="#8884d8"
+                      dataKey="count"
+                      paddingAngle={2}
+                    >
+                      {sectorDistribution.map((entry, index) => {
+                        const colors = generateColors(sectorDistribution.length);
+                        return (
+                          <Cell key={`cell-${index}`} fill={colors[index]} />
+                        );
+                      })}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value, name, props) => [
+                        `${value} (${((props.payload.percent || 0) * 100).toFixed(1)}%)`,
+                        props.payload.sector
+                      ]}
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        padding: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="legend-container">
+                  <div className="legend-title">Sector Distribution</div>
+                  <div className="legend-scroll">
+                    {sectorDistribution.map((item, index) => {
+                      const colors = generateColors(sectorDistribution.length);
+                      return (
+                        <div key={index} className="legend-item">
+                          <span 
+                            className="legend-color" 
+                            style={{ backgroundColor: colors[index] }}
+                          ></span>
+                          <span className="legend-label">{item.sector}</span>
+                          <span className="legend-value">{item.count}</span>
+                          <span className="legend-percent">
+                            ({((item.count / sectorDistribution.reduce((sum, s) => sum + s.count, 0)) * 100).toFixed(1)}%)
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="no-data">No data available</div>
             )}
