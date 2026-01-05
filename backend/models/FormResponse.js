@@ -20,14 +20,15 @@ const formResponseSchema = new mongoose.Schema({
   uploadedFiles: {
     type: [{
       fieldName: String,
-      fileName: String,
-      fileUrl: String,        // Google Drive view link
-      downloadUrl: String,    // Direct download link
-      fileId: String,         // Google Drive file ID
-      filePath: String,       // Legacy field (kept for compatibility)
-      fileSize: Number,       // File size in bytes
-      mimeType: String,      // File MIME type
-      error: String           // Error message if file couldn't be accessed
+      fileName: String,        // New renamed filename (e.g., "1. PD_CompanyName_FounderName.pdf")
+      originalFileName: String, // Original filename before renaming
+      fileUrl: String,          // Google Drive view link
+      downloadUrl: String,      // Direct download link
+      fileId: String,           // Google Drive file ID
+      filePath: String,         // Legacy field (kept for compatibility)
+      fileSize: Number,         // File size in bytes
+      mimeType: String,         // File MIME type
+      error: String             // Error message if file couldn't be accessed
     }],
     default: []
   }

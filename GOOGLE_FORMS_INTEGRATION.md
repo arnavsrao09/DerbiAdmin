@@ -18,7 +18,11 @@ This is the most automated approach. Google Apps Script can automatically send f
 
 ### Step 2: Add the Integration Script
 
-Copy and paste this script into the Apps Script editor:
+**Recommended:** Copy the complete script from `GOOGLE_APPS_SCRIPT.js` file in the project root. This includes automatic file renaming functionality that will rename uploaded files with the format:
+- **Pitch Deck**: `1. PD_CompanyName_FounderName.pdf`
+- **CIN**: `1. CIN_CompanyName_FounderName.pdf`
+
+Alternatively, you can use the simplified version below:
 
 ```javascript
 // Replace with your backend API URL
@@ -252,10 +256,26 @@ Google Forms stores uploaded files in Google Drive. The Apps Script method can a
 ### Field Mapping
 
 Make sure to identify which field in your Google Form corresponds to:
-- **Sector**: Used for pie chart distribution
-- **File uploads**: The 4 file upload fields you mentioned
+- **Sector**: Used for pie chart distribution (e.g., "Industry Segment/ Vertical")
+- **Company Name**: Used for file renaming (e.g., "Name of Startup (As per Incorporation/ Registration Certificate)")
+- **Founder Name**: Used for file renaming (e.g., "Name of Founders")
+- **File uploads**: The 4 file upload fields (Pitch Deck, CIN, Audited Financial Statements, Startup India-DPIIT Certificate)
 
-Update the script accordingly to map your actual field names.
+Update the script configuration constants at the top to match your exact field names:
+- `COMPANY_NAME_KEYWORDS` - Keywords to identify the company name field
+- `FOUNDER_NAME_KEYWORDS` - Keywords to identify the founder name field
+- `PITCH_DECK_KEYWORDS` - Keywords to identify the Pitch Deck upload field
+- `CIN_KEYWORDS` - Keywords to identify the CIN upload field
+
+### File Renaming
+
+The script automatically renames uploaded files in Google Drive with the following format:
+- **Format**: `{responseIndex}. {prefix}_{CompanyName}_{FounderName}.{extension}`
+- **Pitch Deck**: `1. PD_DERBI Foundation_Sathya.pdf` (where "1" is the response number)
+- **CIN**: `1. CIN_DERBI Foundation_Sathya.pdf`
+- The number represents the **response index/number** (which form submission this is), not a file counter
+- All files from the same form submission will have the same response number
+- Example: If this is the 5th form submission, all files will be named starting with "5."
 
 ### Security
 
