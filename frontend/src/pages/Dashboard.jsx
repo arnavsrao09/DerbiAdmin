@@ -220,9 +220,6 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <h1>Admin Portal - Applications Dashboard</h1>
         <div className="header-actions">
-          <button onClick={fetchData} className="refresh-button" title="Refresh">
-            ↻
-          </button>
           <button onClick={logout} className="logout-button">
             Logout
           </button>
@@ -244,7 +241,7 @@ const Dashboard = () => {
           <div className="chart-container">
             {sectorDistribution.length > 0 ? (
               <div className="chart-wrapper">
-                <ResponsiveContainer width="100%" height={500}>
+                <ResponsiveContainer width="100%" height={550}>
                   <PieChart>
                     <Pie
                       data={sectorDistribution}
@@ -252,8 +249,8 @@ const Dashboard = () => {
                       cy="45%"
                       labelLine={false}
                       label={false}
-                      outerRadius={140}
-                      innerRadius={40}
+                      outerRadius={170}
+                      innerRadius={50}
                       fill="#8884d8"
                       dataKey="count"
                       paddingAngle={2}
