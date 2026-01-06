@@ -15,7 +15,7 @@ router.get('/xls', authenticateToken, async (req, res) => {
   try {
     const responses = await FormResponse.find().sort({ timestamp: -1 }).lean();
 
-    // Transform data for Excel
+    // Transform data for Excel with hyperlinks using HYPERLINK formula
     const excelData = responses.map((response, index) => {
       const row = {
         'S.No': index + 1,
@@ -24,10 +24,22 @@ router.get('/xls', authenticateToken, async (req, res) => {
         ...response.formData
       };
 
-      // Add file upload information
+      // Add file upload information with hyperlinks
       if (response.uploadedFiles && response.uploadedFiles.length > 0) {
         response.uploadedFiles.forEach((file, idx) => {
-          row[`File ${idx + 1} (${file.fieldName})`] = file.fileName || file.fileUrl || 'N/A';
+          const columnName = `File ${idx + 1} (${file.fieldName})`;
+          const fileUrl = file.fileUrl || file.downloadUrl;
+          const fileName = file.fileName || 'N/A';
+          
+          if (fileUrl) {
+            // Use Excel HYPERLINK formula: HYPERLINK(link_location, [friendly_name])
+            // Escape quotes in URL and filename for Excel formula
+            const escapedUrl = fileUrl.replace(/"/g, '""');
+            const escapedName = fileName.replace(/"/g, '""');
+            row[columnName] = `=HYPERLINK("${escapedUrl}","${escapedName}")`;
+          } else {
+            row[columnName] = fileName;
+          }
         });
       }
 
