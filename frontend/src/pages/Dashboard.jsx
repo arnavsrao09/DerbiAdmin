@@ -105,27 +105,8 @@ const Dashboard = () => {
     }
   };
 
-  const handleDownloadDocs = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/export/download-docs`, {
-        responseType: 'blob',
-        headers: {
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'uploaded-documents.xlsx');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error('Error downloading docs:', error);
-      alert('Error downloading documents list');
-    }
-  };
+  // Google Drive folder link - configure this in your environment
+  const GOOGLE_DRIVE_FOLDER_URL = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_URL || '';
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, currentPage: newPage }));
@@ -230,9 +211,23 @@ const Dashboard = () => {
         <button onClick={handleExportXLS} className="export-button">
           Export to XLS
         </button>
-        <button onClick={handleDownloadDocs} className="export-button">
-          Download Uploaded Docs
-        </button>
+        {GOOGLE_DRIVE_FOLDER_URL ? (
+          <a 
+            href={GOOGLE_DRIVE_FOLDER_URL} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="export-button drive-link-button"
+          >
+            Google Drive
+          </a>
+        ) : (
+          <div className="drive-link-placeholder">
+            <span className="drive-link-info">⚠️ Google Drive folder link not configured</span>
+            <span className="drive-link-instructions">
+              Add VITE_GOOGLE_DRIVE_FOLDER_URL to your .env file
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="dashboard-content">
